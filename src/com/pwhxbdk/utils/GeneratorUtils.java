@@ -218,14 +218,13 @@ public class GeneratorUtils {
                 String annotation;
                 String qualifiedName;
                 if (isController) {
-                    annotation = "Api";
-                    qualifiedName = "io.swagger.annotations.Api";
-                    String fieldValue = this.getMappingAttribute(psiClass.getModifierList().getAnnotations(), MAPPING_VALUE);
-                    annotationFromText = String.format("@%s(value = %s, tags = {\"%s\"})",annotation,fieldValue,commentDesc);
+                    annotation = "Tag";
+                    qualifiedName = "io.swagger.v3.oas.annotations.tags.Tag";
+                    annotationFromText = String.format("@%s(name = \"%s\")", annotation, commentDesc);
                 } else {
-                    annotation = "ApiModel";
-                    qualifiedName = "io.swagger.annotations.ApiModel";
-                    annotationFromText = String.format("@%s(description = \"%s\")", annotation, commentDesc);
+                    annotation = "Schema";
+                    qualifiedName = "io.swagger.v3.oas.annotations.media.Schema";
+                    annotationFromText = String.format("@%s(title = \"%s\")", annotation, commentDesc);
                 }
                 this.doWrite(annotation, qualifiedName, annotationFromText, psiClass);
             }
@@ -235,13 +234,13 @@ public class GeneratorUtils {
             String annotation;
             String qualifiedName;
             if (isController) {
-                annotation = "Api";
-                qualifiedName = "io.swagger.annotations.Api";
+                annotation = "Tag";
+                qualifiedName = "io.swagger.v3.oas.annotations.tags.Tag";
                 String fieldValue = this.getMappingAttribute(psiClass.getModifierList().getAnnotations(), MAPPING_VALUE);
-                annotationFromText = String.format("@%s(value = %s)",annotation,fieldValue);
+                annotationFromText = String.format("@%s(name = \"%s\")",annotation,fieldValue);
             } else {
-                annotation = "ApiModel";
-                qualifiedName = "io.swagger.annotations.ApiModel";
+                annotation = "Schema";
+                qualifiedName = "io.swagger.v3.oas.annotations.media.Schema";
                 annotationFromText = String.format("@%s", annotation);
             }
             this.doWrite(annotation, qualifiedName, annotationFromText, psiClass);
@@ -269,68 +268,67 @@ public class GeneratorUtils {
         String methodValue = this.getMappingAttribute(psiAnnotations, MAPPING_METHOD);
 
         // 如果存在注解，获取注解原本的value和notes内容
-        PsiAnnotation apiOperationExist = psiMethod.getModifierList().findAnnotation("io.swagger.annotations.ApiOperation");
-        String apiOperationAttrValue = this.getAttribute(apiOperationExist,"value", commentDesc);
-        String apiOperationAttrNotes = this.getAttribute(apiOperationExist,"notes", commentDesc);
+        PsiAnnotation apiOperationExist = psiMethod.getModifierList().findAnnotation("io.swagger.v3.oas.annotations.Operation");
+        String apiOperationAttrNotes = this.getAttribute(apiOperationExist,"summary", commentDesc);
         String apiOperationAnnotationText;
         if (StringUtils.isNotEmpty(methodValue)) {
             methodValue = methodValue.substring(methodValue.indexOf(".") + 1);
-            apiOperationAnnotationText = String.format("@ApiOperation(value = %s, notes = %s, httpMethod = \"%s\")", apiOperationAttrValue, apiOperationAttrNotes, methodValue);
+            apiOperationAnnotationText = String.format("@Operation(summary = %s, method = \"%s\")", apiOperationAttrNotes, methodValue);
         } else {
-            apiOperationAnnotationText = String.format("@ApiOperation(value = %s, notes = %s)", apiOperationAttrValue, apiOperationAttrNotes);
+            apiOperationAnnotationText = String.format("@Operation(summary = %s)", apiOperationAttrNotes);
         }
 
-        String apiImplicitParamsAnnotationText = null;
-        PsiParameter[] psiParameters = psiMethod.getParameterList().getParameters();
-        List<String> apiImplicitParamList = new ArrayList<>(psiParameters.length);
-        for (PsiParameter psiParameter : psiParameters) {
-            PsiType psiType = psiParameter.getType();
-            String dataType = CommentUtils.getDataType(psiType.getCanonicalText(), psiType);
-            String paramType = "query";
-            for (PsiAnnotation psiAnnotation : psiParameter.getModifierList().getAnnotations()) {
-                if (StringUtils.isEmpty(psiAnnotation.getQualifiedName())) {
-                    break;
-                }
-                switch (psiAnnotation.getQualifiedName()) {
-                    case REQUEST_HEADER_TEXT:
-                        paramType = "header";
-                        break;
-                    case REQUEST_PARAM_TEXT:
-                        paramType = "query";
-                        break;
-                    case PATH_VARIABLE_TEXT:
-                        paramType = "path";
-                        break;
-                    case REQUEST_BODY_TEXT:
-                        paramType = "body";
-                        break;
-                    default:
-                        break;
-                }
-            }
-            if (Objects.equals(dataType,"file")) {
-                paramType = "form";
-            }
-            String paramDesc = "";
-            if (methodParamCommentDesc != null) {
-                paramDesc = methodParamCommentDesc.get(psiParameter.getNameIdentifier().getText());
-            }
-            String apiImplicitParamText =
-                    String.format("@ApiImplicitParam(paramType = \"%s\", dataType = \"%s\", name = \"%s\", value = \"%s\")",
-                            paramType, dataType, psiParameter.getNameIdentifier().getText(), paramDesc == null ? "" : paramDesc);
+//        String apiImplicitParamsAnnotationText = null;
+//        PsiParameter[] psiParameters = psiMethod.getParameterList().getParameters();
+//        List<String> apiImplicitParamList = new ArrayList<>(psiParameters.length);
+//        for (PsiParameter psiParameter : psiParameters) {
+//            PsiType psiType = psiParameter.getType();
+//            String dataType = CommentUtils.getDataType(psiType.getCanonicalText(), psiType);
+//            String paramType = "query";
+//            for (PsiAnnotation psiAnnotation : psiParameter.getModifierList().getAnnotations()) {
+//                if (StringUtils.isEmpty(psiAnnotation.getQualifiedName())) {
+//                    break;
+//                }
+//                switch (psiAnnotation.getQualifiedName()) {
+//                    case REQUEST_HEADER_TEXT:
+//                        paramType = "header";
+//                        break;
+//                    case REQUEST_PARAM_TEXT:
+//                        paramType = "query";
+//                        break;
+//                    case PATH_VARIABLE_TEXT:
+//                        paramType = "path";
+//                        break;
+//                    case REQUEST_BODY_TEXT:
+//                        paramType = "body";
+//                        break;
+//                    default:
+//                        break;
+//                }
+//            }
+//            if (Objects.equals(dataType,"file")) {
+//                paramType = "form";
+//            }
+//            String paramDesc = "";
+//            if (methodParamCommentDesc != null) {
+//                paramDesc = methodParamCommentDesc.get(psiParameter.getNameIdentifier().getText());
+//            }
 //            String apiImplicitParamText =
-//                    String.format("@ApiImplicitParam(paramType = \"%s\", dataType = \"%s\", name = \"%s\", value = \"\", required = %s)",paramType, dataType, psiParameter.getNameIdentifier().getText());
-            apiImplicitParamList.add(apiImplicitParamText);
-        }
-        if (apiImplicitParamList.size() != 0) {
-            apiImplicitParamsAnnotationText = apiImplicitParamList.stream().collect(Collectors.joining(",\n", "@ApiImplicitParams({\n", "\n})"));
-        }
+//                    String.format("@Parameter(name = \"%s\", dataType = \"%s\", name = \"%s\", value = \"%s\")",
+//                            paramType, dataType, psiParameter.getNameIdentifier().getText(), paramDesc == null ? "" : paramDesc);
+////            String apiImplicitParamText =
+////                    String.format("@Parameter(paramType = \"%s\", dataType = \"%s\", name = \"%s\", value = \"\", required = %s)",paramType, dataType, psiParameter.getNameIdentifier().getText());
+//            apiImplicitParamList.add(apiImplicitParamText);
+//        }
+//        if (apiImplicitParamList.size() != 0) {
+//            apiImplicitParamsAnnotationText = apiImplicitParamList.stream().collect(Collectors.joining(",\n", "@ApiImplicitParams({\n", "\n})"));
+//        }
 
-        this.doWrite("ApiOperation", "io.swagger.annotations.ApiOperation", apiOperationAnnotationText, psiMethod);
-        if (StringUtils.isNotEmpty(apiImplicitParamsAnnotationText)) {
-            this.doWrite("ApiImplicitParams", "io.swagger.annotations.ApiImplicitParams", apiImplicitParamsAnnotationText, psiMethod);
-        }
-        addImport(elementFactory, psiFile, "ApiImplicitParam");
+        this.doWrite("Operation", "io.swagger.v3.oas.annotations.Operation", apiOperationAnnotationText, psiMethod);
+//        if (StringUtils.isNotEmpty(apiImplicitParamsAnnotationText)) {
+//            this.doWrite("ApiImplicitParams", "io.swagger.annotations.ApiImplicitParams", apiImplicitParamsAnnotationText, psiMethod);
+//        }
+//        addImport(elementFactory, psiFile, "ApiImplicitParam");
     }
 
     /**
@@ -345,12 +343,12 @@ public class GeneratorUtils {
                 // 注释的内容
                 String tmpText = classComment.getText();
                 String commentDesc = CommentUtils.getCommentDesc(tmpText);
-                String apiModelPropertyText = String.format("@ApiModelProperty(value=\"%s\")",commentDesc);
-                this.doWrite("ApiModelProperty", "io.swagger.annotations.ApiModelProperty", apiModelPropertyText, psiField);
+                String apiModelPropertyText = String.format("@Schema(title=\"%s\")",commentDesc);
+                this.doWrite("Schema", "io.swagger.v3.oas.annotations.media.Schema", apiModelPropertyText, psiField);
             }
         }
         if (Objects.isNull(classComment)) {
-            this.doWrite("ApiModelProperty", "io.swagger.annotations.ApiModelProperty", "@ApiModelProperty(\"\")", psiField);
+            this.doWrite("Schema", "io.swagger.v3.oas.annotations.media.Schema", "@Schema(\"\")", psiField);
         }
     }
 
